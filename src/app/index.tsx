@@ -1,98 +1,164 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useTimerContext } from "@/context/TimerContext";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { router } from "expo-router";
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+import CircularTimerPicker from "@/components/CircularTimerPicker";
+import PrimaryButton from "@/components/PrimaryButton";
+import StatCard from "@/components/StatCard";
+import TimerPicker from "@/components/TimerPicker";
+
+import { Theme } from "@/constants/theme";
+import { useAppTheme } from "@/context/ThemeContext";
 
 export default function HomeScreen() {
+  const { colors } = useAppTheme();
+  const {
+    totalSeconds,
+    remainingSeconds,
+    isRunning,
+    focusStats,
+    setDuration,
+    start,
+  } = useTimerContext();
+
+  const isReadyToStart = remainingSeconds === totalSeconds && !isRunning;
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      edges={["top", "left", "right"]}
+    >
+      <View style={styles.content}>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        <View style={styles.header}>
+          <Text style={[styles.greeting, { color: colors.textSecondary }]}>Good Morning</Text>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
+          <Text style={[styles.title, { color: colors.text }]}>
+            LockIn
+          </Text>
+
+          <Text style={[styles.description, { color: colors.textSecondary }]}>
+            Commit to your focus session.
+          </Text>
+        </View>
+
+        <CircularTimerPicker
+          totalSeconds={totalSeconds}
+          remainingSeconds={remainingSeconds}
+        />
+
+        <TimerPicker
+          selectedSeconds={totalSeconds}
+          disabled={!isReadyToStart}
+          onSelect={setDuration}
+        />
+
+        <View style={styles.stats}>
+          <StatCard
+            value={`${Math.floor(focusStats.todaySeconds / 3600)}h ${String(
+              Math.floor((focusStats.todaySeconds % 3600) / 60),
+            ).padStart(2, "0")}m`}
+            label="Today's Focus"
           />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
 
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+          <StatCard
+            value={String(focusStats.currentStreak)}
+            label="Current Streak"
+          />
+        </View>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="View focus history"
+          onPress={() => router.push("/history")}
+          style={({ pressed }) => [styles.historyLink, pressed && styles.historyLinkPressed]}
+        >
+          <Text style={[styles.historyLinkText, { color: colors.primary }]}>View focus history</Text>
+        </Pressable>
+
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Open settings"
+          onPress={() => router.push("/settings")}
+          style={({ pressed }) => [styles.settingsLink, pressed && styles.historyLinkPressed]}
+        >
+          <Text style={[styles.historyLinkText, { color: colors.textSecondary }]}>Settings</Text>
+        </Pressable>
+
+        <PrimaryButton
+          title="Start Focus Session"
+          disabled={!isReadyToStart}
+          onPress={async () => {
+              await start();
+              router.push("/lock");
+          }}
+        />
+
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    flexDirection: 'row',
   },
-  safeArea: {
+
+  content: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
+
+    paddingHorizontal: Theme.spacing.md,
+
+    justifyContent: "space-evenly",
   },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+
+  header: {
+    gap: Theme.spacing.xs,
   },
+
+  greeting: {
+
+    fontFamily: Theme.fonts.medium,
+
+    fontSize: Theme.typography.body,
+  },
+
   title: {
-    textAlign: 'center',
+
+    fontFamily: Theme.fonts.bold,
+
+    fontSize: Theme.typography.title,
   },
-  code: {
-    textTransform: 'uppercase',
+
+  description: {
+
+    fontFamily: Theme.fonts.regular,
+
+    fontSize: Theme.typography.body,
   },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+
+  stats: {
+    flexDirection: "row",
+
+    gap: Theme.spacing.md,
+  },
+
+  historyLink: {
+    alignItems: "center",
+  },
+
+  historyLinkPressed: {
+    opacity: 0.7,
+  },
+
+  historyLinkText: {
+    fontFamily: Theme.fonts.semibold,
+    fontSize: Theme.typography.caption,
+  },
+
+  settingsLink: {
+    alignItems: "center",
+    marginTop: -Theme.spacing.sm,
   },
 });

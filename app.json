@@ -32,11 +32,20 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-font",
+      "./plugins/lock-task-plugin.js"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f9e6f774-32cb-4a3b-9948-a78c10d6c29b"
+      }
+    },
+    "owner": "jetluck"
   }
 }
